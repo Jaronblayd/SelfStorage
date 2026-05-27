@@ -1,0 +1,2627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>StorageInvestors.io — Find Self Storage Facilities For Sale</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    :root{
+      --green:#16A34A;--green-deep:#15803D;--green-pale:#DCFCE7;--green-mid:#22C55E;
+      --slate:#0F172A;--slate-mid:#334155;--slate-light:#64748B;--slate-lighter:#94A3B8;
+      --chalk:#F8FAFC;--white:#FFFFFF;--border:#E2E8F0;--border-mid:#CBD5E1;
+      --gold:#D97706;--gold-pale:#FEF3C7;
+      --font-display:'Playfair Display',Georgia,serif;
+      --font-body:'Outfit',system-ui,sans-serif;
+      --radius:16px;--radius-sm:10px;--radius-lg:24px;
+      --shadow-sm:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+      --shadow-md:0 4px 16px rgba(0,0,0,.08),0 2px 4px rgba(0,0,0,.04);
+      --shadow-lg:0 20px 40px rgba(0,0,0,.1),0 8px 16px rgba(0,0,0,.06);
+      --shadow-green:0 8px 24px rgba(22,163,74,.25);
+    }
+    html,body,#root{min-height:100%;background:var(--chalk);font-family:var(--font-body)}
+
+    @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+    @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+    .fu0{animation:fadeUp .6s ease both}
+    .fu1{animation:fadeUp .6s .1s ease both}
+    .fu2{animation:fadeUp .6s .2s ease both}
+    .fu3{animation:fadeUp .6s .3s ease both}
+    .fu4{animation:fadeUp .6s .4s ease both}
+    .fi{animation:fadeIn .4s ease both}
+    .card-enter{animation:fadeUp .5s ease both}
+
+    .shimmer{
+      background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);
+      background-size:200% 100%;animation:shimmer 1.8s infinite;
+      border-radius:var(--radius);
+    }
+
+    /* Nav */
+    .nav{
+      background:rgba(255,255,255,.95);
+      backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--border);
+      padding:0 24px;
+      display:flex;justify-content:space-between;align-items:center;
+      position:sticky;top:0;z-index:100;height:64px;
+    }
+    .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+    .nav-logo-icon{
+      width:36px;height:36px;
+      background:linear-gradient(135deg,var(--green),var(--green-mid));
+      border-radius:10px;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:var(--shadow-green);
+      flex-shrink:0;
+    }
+    .nav-logo-text{font-family:var(--font-display);font-size:19px;font-weight:700;color:var(--slate);letter-spacing:-.02em}
+    .nav-logo-text span{color:var(--green)}
+    .nav-actions{display:flex;align-items:center;gap:10px}
+
+    /* Buttons */
+    .btn{
+      display:inline-flex;align-items:center;justify-content:center;gap:8px;
+      border:none;border-radius:var(--radius-sm);
+      font-family:var(--font-body);font-weight:600;
+      cursor:pointer;transition:all .15s;text-decoration:none;
+    }
+    .btn:active{transform:scale(.97)}
+    .btn-green{background:var(--green);color:#fff;box-shadow:var(--shadow-green)}
+    .btn-green:hover{background:var(--green-deep)}
+    .btn-green:disabled{background:#CBD5E1;box-shadow:none;cursor:not-allowed}
+    .btn-outline{background:transparent;color:var(--slate);border:1.5px solid var(--border-mid)}
+    .btn-outline:hover{background:var(--chalk);border-color:var(--slate-light)}
+    .btn-white{background:#fff;color:var(--slate);box-shadow:var(--shadow-sm);border:1px solid var(--border)}
+    .btn-white:hover{box-shadow:var(--shadow-md)}
+    .btn-sm{font-size:13px;padding:8px 14px}
+    .btn-md{font-size:15px;padding:12px 20px}
+    .btn-lg{font-size:17px;padding:16px 28px}
+    .btn-full{width:100%}
+
+    /* Hero */
+    .hero{
+      background:linear-gradient(160deg,#F0FDF4 0%,#DCFCE7 40%,#F8FAFC 100%);
+      padding:72px 24px 80px;
+      text-align:center;
+      position:relative;
+      overflow:hidden;
+    }
+    .hero::before{
+      content:'';position:absolute;inset:0;
+      background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(22,163,74,.08) 0%,transparent 70%);
+      pointer-events:none;
+    }
+    .hero-badge{
+      display:inline-flex;align-items:center;gap:6px;
+      background:#fff;border:1px solid var(--green-pale);
+      color:var(--green-deep);font-size:12px;font-weight:600;
+      padding:6px 14px;border-radius:20px;margin-bottom:24px;
+      box-shadow:var(--shadow-sm);
+      letter-spacing:.04em;text-transform:uppercase;
+    }
+    .hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+    .hero-title{
+      font-family:var(--font-display);
+      font-size:clamp(36px,7vw,64px);
+      font-weight:700;color:var(--slate);
+      line-height:1.1;letter-spacing:-.03em;
+      margin-bottom:20px;max-width:720px;margin-left:auto;margin-right:auto;
+    }
+    .hero-title em{color:var(--green);font-style:italic;font-weight:400}
+    .hero-sub{
+      font-size:clamp(15px,2.5vw,18px);color:var(--slate-light);
+      line-height:1.65;max-width:520px;margin:0 auto 40px;font-weight:400;
+    }
+
+    /* Search bar */
+    .search-bar{
+      background:#fff;border-radius:var(--radius);
+      box-shadow:var(--shadow-lg);border:1px solid var(--border);
+      padding:8px;display:flex;gap:6px;align-items:center;
+      max-width:640px;margin:0 auto 48px;flex-wrap:wrap;
+    }
+    .search-input-wrap{flex:1;min-width:160px;position:relative}
+    .search-input{
+      width:100%;border:none;outline:none;
+      font-family:var(--font-body);font-size:15px;color:var(--slate);
+      padding:10px 14px;background:transparent;
+    }
+    .search-input::placeholder{color:var(--slate-lighter)}
+    .search-divider{width:1px;height:28px;background:var(--border);flex-shrink:0}
+    .search-select{
+      border:none;outline:none;background:transparent;
+      font-family:var(--font-body);font-size:14px;color:var(--slate-mid);
+      padding:10px 12px;cursor:pointer;-webkit-appearance:none;appearance:none;
+      min-width:120px;
+    }
+
+    /* Stats bar */
+    .stats-bar{
+      display:flex;justify-content:center;gap:0;
+      background:#fff;border-radius:var(--radius);
+      border:1px solid var(--border);box-shadow:var(--shadow-sm);
+      overflow:hidden;max-width:560px;margin:0 auto;
+    }
+    .stat-item{
+      flex:1;padding:16px 12px;text-align:center;
+      border-right:1px solid var(--border);
+    }
+    .stat-item:last-child{border-right:none}
+    .stat-num{font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--slate);margin-bottom:2px}
+    .stat-label{font-size:11px;color:var(--slate-lighter);font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+
+    /* Filter bar */
+    .filter-bar{
+      background:#fff;border-bottom:1px solid var(--border);
+      padding:12px 24px;display:flex;gap:8px;align-items:center;
+      overflow-x:auto;-webkit-overflow-scrolling:touch;
+    }
+    .filter-bar::-webkit-scrollbar{display:none}
+    .filter-chip{
+      display:inline-flex;align-items:center;gap:6px;
+      background:var(--chalk);border:1.5px solid var(--border);
+      color:var(--slate-mid);font-size:13px;font-weight:500;
+      padding:7px 14px;border-radius:20px;white-space:nowrap;cursor:pointer;
+      transition:all .15s;font-family:var(--font-body);
+    }
+    .filter-chip:hover{border-color:var(--green);color:var(--green)}
+    .filter-chip.active{background:var(--green-pale);border-color:var(--green);color:var(--green-deep);font-weight:600}
+
+    /* Listing grid */
+    .listings-section{max-width:1200px;margin:0 auto;padding:32px 24px 100px}
+    .listings-header{
+      display:flex;justify-content:space-between;align-items:center;
+      margin-bottom:24px;flex-wrap:wrap;gap:12px;
+    }
+    .listings-title{font-family:var(--font-display);font-size:22px;font-weight:600;color:var(--slate)}
+    .listings-count{font-size:14px;color:var(--slate-light);margin-top:2px}
+    .listings-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+      gap:20px;
+    }
+
+    /* Listing card */
+    .listing-card{
+      background:#fff;border-radius:var(--radius);
+      border:1px solid var(--border);
+      box-shadow:var(--shadow-sm);
+      overflow:hidden;cursor:pointer;
+      transition:box-shadow .2s,transform .2s;
+    }
+    .listing-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+    .listing-card:active{transform:scale(.99)}
+    .listing-img{
+      width:100%;height:200px;object-fit:cover;
+      background:linear-gradient(135deg,#E2E8F0,#CBD5E1);
+      display:flex;align-items:center;justify-content:center;
+      position:relative;overflow:hidden;
+    }
+    .listing-img-placeholder{
+      display:flex;flex-direction:column;align-items:center;gap:8px;
+    }
+    .listing-badge{
+      position:absolute;top:12px;left:12px;
+      background:#fff;color:var(--slate);
+      font-size:11px;font-weight:700;padding:4px 10px;
+      border-radius:20px;box-shadow:var(--shadow-sm);
+      text-transform:uppercase;letter-spacing:.06em;
+    }
+    .listing-badge.featured{background:var(--gold);color:#fff}
+    .listing-save{
+      position:absolute;top:12px;right:12px;
+      width:32px;height:32px;border-radius:50%;background:#fff;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:var(--shadow-sm);cursor:pointer;border:none;
+      transition:all .15s;
+    }
+    .listing-save:hover{transform:scale(1.1)}
+    .listing-save.saved svg{fill:#EF4444;stroke:#EF4444}
+    .listing-body{padding:18px}
+    .listing-price{
+      font-family:var(--font-display);font-size:22px;font-weight:700;
+      color:var(--slate);margin-bottom:4px;
+    }
+    .listing-name{font-size:15px;font-weight:600;color:var(--slate);margin-bottom:4px;line-height:1.3}
+    .listing-location{
+      display:flex;align-items:center;gap:4px;
+      font-size:13px;color:var(--slate-light);margin-bottom:14px;
+    }
+    .listing-metrics{
+      display:grid;grid-template-columns:1fr 1fr 1fr;
+      gap:8px;padding:12px 0;
+      border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+      margin-bottom:12px;
+    }
+    .metric{text-align:center}
+    .metric-val{font-size:15px;font-weight:700;color:var(--slate);margin-bottom:1px}
+    .metric-key{font-size:10px;color:var(--slate-lighter);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+    .listing-tags{display:flex;flex-wrap:wrap;gap:6px}
+    .listing-tag{
+      background:var(--chalk);color:var(--slate-mid);
+      font-size:11px;font-weight:500;padding:3px 8px;border-radius:6px;
+    }
+
+    /* Detail modal */
+    .overlay{
+      position:fixed;inset:0;background:rgba(15,23,42,.7);
+      backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+      display:flex;align-items:flex-end;justify-content:center;
+      z-index:200;animation:fadeIn .2s ease;
+    }
+    .detail-sheet{
+      background:#fff;border-radius:28px 28px 0 0;
+      width:100%;max-width:680px;
+      max-height:92vh;overflow-y:auto;
+      animation:fadeUp .3s ease;
+    }
+    .detail-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:16px auto 0}
+    .detail-img{width:100%;height:240px;background:linear-gradient(135deg,#E2E8F0,#CBD5E1);display:flex;align-items:center;justify-content:center}
+    .detail-body{padding:24px}
+    .detail-price{font-family:var(--font-display);font-size:28px;font-weight:700;color:var(--slate);margin-bottom:4px}
+    .detail-name{font-size:18px;font-weight:600;color:var(--slate);margin-bottom:8px}
+    .detail-metrics{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:12px;
+      background:var(--chalk);border-radius:var(--radius-sm);
+      padding:16px;margin:16px 0;
+    }
+    .detail-metric{text-align:center}
+    .detail-metric-val{font-size:18px;font-weight:700;color:var(--slate);margin-bottom:2px}
+    .detail-metric-key{font-size:11px;color:var(--slate-light);text-transform:uppercase;letter-spacing:.06em}
+    .detail-section{margin-bottom:20px}
+    .detail-section-title{font-size:13px;font-weight:700;color:var(--slate-mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+    .detail-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px}
+    .detail-row-key{color:var(--slate-light)}
+    .detail-row-val{color:var(--slate);font-weight:500}
+
+    /* Paywall */
+    .paywall-sheet{
+      background:#fff;border-radius:28px 28px 0 0;
+      padding:12px 24px 48px;width:100%;max-width:480px;
+      animation:fadeUp .3s ease;max-height:92vh;overflow-y:auto;
+    }
+    .handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 28px}
+    .plan-card{border:2px solid var(--border);border-radius:20px;padding:20px;cursor:pointer;transition:all .2s}
+    .plan-card.selected{border-color:var(--green);background:#F0FDF4}
+
+    /* Input */
+    .inp{
+      width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+      background:#fff;color:var(--slate);font-family:var(--font-body);
+      font-size:16px;padding:14px 16px;outline:none;
+      transition:border-color .15s,box-shadow .15s;-webkit-appearance:none;appearance:none;
+    }
+    .inp:focus{border-color:var(--green);box-shadow:0 0 0 4px rgba(22,163,74,.1)}
+    .inp::placeholder{color:var(--slate-lighter)}
+
+    /* Floating CTA */
+    .floating-cta{
+      position:fixed;bottom:0;left:0;right:0;
+      background:#fff;border-top:1px solid var(--border);
+      padding:12px 20px calc(12px + env(safe-area-inset-bottom));
+      z-index:100;display:flex;gap:10px;
+      box-shadow:0 -8px 24px rgba(0,0,0,.06);
+    }
+
+    /* Cap rate calculator */
+    .calc-card{
+      background:linear-gradient(135deg,var(--slate) 0%,#1E3A5F 100%);
+      border-radius:var(--radius);padding:28px;color:#fff;
+      margin-bottom:32px;
+    }
+    .calc-title{font-family:var(--font-display);font-size:22px;font-weight:600;margin-bottom:6px}
+    .calc-sub{font-size:14px;opacity:.7;margin-bottom:20px}
+    .calc-inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+    .calc-input{
+      background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+      border-radius:var(--radius-sm);padding:12px 14px;
+      color:#fff;font-family:var(--font-body);font-size:15px;outline:none;
+      width:100%;
+    }
+    .calc-input::placeholder{color:rgba(255,255,255,.4)}
+    .calc-label{font-size:11px;opacity:.6;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em}
+    .calc-result{
+      background:rgba(255,255,255,.15);border-radius:var(--radius-sm);
+      padding:16px;display:flex;justify-content:space-between;align-items:center;
+    }
+    .calc-result-label{font-size:13px;opacity:.8}
+    .calc-result-val{font-family:var(--font-display);font-size:28px;font-weight:700;color:var(--green-mid)}
+
+    /* Submit form */
+    .submit-section{
+      background:linear-gradient(135deg,#F0FDF4,#DCFCE7);
+      border:1px solid #BBF7D0;border-radius:var(--radius);
+      padding:32px 28px;margin-bottom:32px;
+    }
+    .submit-title{font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--slate);margin-bottom:6px}
+    .submit-sub{font-size:15px;color:var(--slate-light);margin-bottom:24px;line-height:1.6}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .form-full{grid-column:1/-1}
+    .form-label{font-size:12px;font-weight:600;color:var(--slate-mid);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px}
+    .form-inp{width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:#fff;color:var(--slate);font-family:var(--font-body);font-size:15px;padding:12px 14px;outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none}
+    .form-inp:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.1)}
+    .form-inp::placeholder{color:var(--slate-lighter)}
+    .form-textarea{resize:vertical;min-height:100px}
+    .checkbox-row{display:flex;align-items:center;gap:10px;cursor:pointer}
+    .checkbox-row input{width:18px;height:18px;accent-color:var(--green);cursor:pointer}
+    .success-box{background:#fff;border:2px solid var(--green);border-radius:var(--radius);padding:32px;text-align:center}
+
+    @media(max-width:600px){
+      .listings-grid{grid-template-columns:1fr}
+      .hero{padding:48px 20px 56px}
+      .search-bar{padding:6px}
+      .calc-inputs{grid-template-columns:1fr}
+      .form-grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
+
+const STRIPE_PK = "pk_test_51TaNzDI4q7OTR0HUESnkmdix3yWMZB1P8vFlq3SbdFzgjHECKq2yT9TjRZQSj5CBDyEKTNRn7z1Y5VFkSWv2Ygry00loewDSXb";
+const PRICE_ID  = "price_1TaO4oI4q7OTR0HUg8YJ32H0";
+
+const STATES = ["All States","Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming"];
+
+const PRICE_RANGES = ["Any Price","Under $500K","$500K - $1M","$1M - $2M","$2M - $5M","$5M+"];
+const CAP_RATES = ["Any Cap Rate","4%+","5%+","6%+","7%+","8%+","9%+","10%+"];
+
+// Mock listings — in production these come from Apify scraping LoopNet/Crexi/BizBuySell
+const STATIC_LISTINGS = [
+  {
+    "id": 2418891,
+    "name": "Former Campus Value Add Redevelopment Opportunity",
+    "description": "\u00b1 97,421 SF on \u00b1 3.72 acres",
+    "city": "",
+    "state": "MO",
+    "price": 625000,
+    "priceStr": "$625K",
+    "sqft": 97421,
+    "investmentType": null,
+    "status": "Auction",
+    "thumbnailUrl": "https://images.crexi.com/assets/2418891/85f58250a17044a4980e997b22944e03_716x444.jpg",
+    "brokerageName": "Reece Commercial Real Estate Springfield",
+    "crexiUrl": "https://www.crexi.com/properties/missouri-former-campus-value-add-redevelopment-opportunity",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Retail",
+      "Multifamily",
+      "Office",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2464646,
+    "name": "Cash Flowing Self Storage and RV",
+    "description": "Lumberton MSA",
+    "city": "",
+    "state": "NO",
+    "price": 200000,
+    "priceStr": "$200K",
+    "sqft": 11250,
+    "investmentType": null,
+    "status": "Auction",
+    "thumbnailUrl": "https://images.crexi.com/assets/2464646/605cd9aeffda4604a7addf230c13d8d1_716x444.jpg",
+    "brokerageName": "Franklin Street Tampa",
+    "crexiUrl": "https://www.crexi.com/properties/north-carolina-cash-flowing-storage-rv",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2486826,
+    "name": "Former Mill Building",
+    "description": "230,000 SF Building | 3.66 Acre Lot",
+    "city": "",
+    "state": "MA",
+    "price": 100000,
+    "priceStr": "$100K",
+    "sqft": 230000,
+    "investmentType": null,
+    "status": "Auction",
+    "thumbnailUrl": "https://images.crexi.com/assets/2486826/97b5d5b4824b493b823a7a12c3f80c1e_716x444.jpg",
+    "brokerageName": "L&P Commercial - Low",
+    "crexiUrl": "https://www.crexi.com/properties/massachusetts-former-mill-building",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": true,
+    "types": [
+      "Multifamily",
+      "Industrial",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 1501244,
+    "name": "312 Herring Ave Wilson NC",
+    "description": "Warehouse flex space Downtown",
+    "city": "",
+    "state": "NO",
+    "price": 1300000,
+    "priceStr": "$1.3M",
+    "sqft": 35000,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/1501244/8ec9a595968848ae8d7234603f732343_716x444.jpg",
+    "brokerageName": "Green Valley Realty",
+    "crexiUrl": "https://www.crexi.com/properties/north-carolina-312-herring-ave-wilson-nc",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Industrial",
+      "Land",
+      "Mixed Use",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2492740,
+    "name": "Cohoe Storage & Business Center",
+    "description": "278 Units | 11 Buildings",
+    "city": "",
+    "state": "IA",
+    "price": 300000,
+    "priceStr": "$300K",
+    "sqft": 43931,
+    "investmentType": "Value Add",
+    "status": "Auction",
+    "thumbnailUrl": "https://images.crexi.com/assets/2492740/a5d77b054d1e412aa66b93fe84055b58_716x444.jpg",
+    "brokerageName": "Matthews",
+    "crexiUrl": "https://www.crexi.com/properties/iowa-cohoe-storage-business-center",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 1001115,
+    "name": "Falcon Storage Condos | Boise, ID",
+    "description": "Falcon Storage Condos | For Sale",
+    "city": "Boise",
+    "state": "ID",
+    "price": null,
+    "priceStr": "Price Upon Request",
+    "sqft": null,
+    "investmentType": "Owner/User",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/1001115/0a2d9d741cd341a0ab1503142dee4e6b_716x444.jpg",
+    "brokerageName": "Lee & Associates - Boise",
+    "crexiUrl": "https://www.crexi.com/properties/idaho-falcon-storage-condos",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Mixed Use",
+      "Self Storage",
+      "Special Purpose"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2343944,
+    "name": "Southern EZ Storage",
+    "description": "Two Self Storage Properties | Crestview, FL",
+    "city": "Crestview",
+    "state": "FL",
+    "price": 1200000,
+    "priceStr": "$1.2M",
+    "sqft": 18120,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2343944/75e3a17e199a4ee2ab673044a4348ee7_716x444.jpg",
+    "brokerageName": "Oakside Companies",
+    "crexiUrl": "https://www.crexi.com/properties/florida-southern-ez-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2447006,
+    "name": "Chapman Storage Portfolio",
+    "description": "Three-Facility Self-Storage Portfolio in Huntsville MSA with 1,720 Units and NOI Upside",
+    "city": "",
+    "state": "AL",
+    "price": 13750000,
+    "priceStr": "$13.8M",
+    "sqft": 268081,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2447006/2c4c385585764e8398e97fb96fe7bc7d_716x444.jpg",
+    "brokerageName": "Matthews",
+    "crexiUrl": "https://www.crexi.com/properties/alabama-chapman-storage-portfolio",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 1065059,
+    "name": "2.16-Acre Waterfront | Zoning Flex + Utilities DR Phillips",
+    "description": "Rare 2.15 Acre Windermere/Dr. Phillips Corridor | Zoning Flex & Utilities",
+    "city": "",
+    "state": "FL",
+    "price": 1800000,
+    "priceStr": "$1.8M",
+    "sqft": null,
+    "investmentType": null,
+    "status": "Highest & Best",
+    "thumbnailUrl": "https://images.crexi.com/assets/1065059/3ebe3f409eb047a2a539f42eece5ea8f_716x444.jpg",
+    "brokerageName": "GlobeCore Real Estate Group",
+    "crexiUrl": "https://www.crexi.com/properties/florida-need-to-be-converted-to-mixuse-or-commercial--prime-location",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Land",
+      "Self Storage",
+      "Senior Living",
+      "Special Purpose",
+      "Multifamily"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 1995134,
+    "name": "Seguin Storage",
+    "description": "Self Storage | 471 Units | $21,231/unit",
+    "city": "",
+    "state": "TX",
+    "price": 10000000,
+    "priceStr": "$10.0M",
+    "sqft": 66490,
+    "investmentType": "Value Add",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/1995134/51fb52feca9c42ff972c0b8328c3402d_716x444.jpg",
+    "brokerageName": "Oakside Companies",
+    "crexiUrl": "https://www.crexi.com/properties/texas-seguin-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2357074,
+    "name": "TNT RV Toy Storage",
+    "description": "Storage & Industrial Shop | 33,000 NRSF",
+    "city": "",
+    "state": "OR",
+    "price": null,
+    "priceStr": "Price Upon Request",
+    "sqft": 33000,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2357074/6bcdfd198a6e4ecb89a8fbc4448ba13d_716x444.jpg",
+    "brokerageName": "Matthews",
+    "crexiUrl": "https://www.crexi.com/properties/oregon-tnt-rv-toy-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": true,
+    "types": [
+      "Retail",
+      "Industrial",
+      "Mixed Use",
+      "Self Storage",
+      "Business for Sale"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 1672556,
+    "name": "Greenlight Garagedominiums",
+    "description": "Self Storage | 29 Units total - 24",
+    "city": "",
+    "state": "KS",
+    "price": null,
+    "priceStr": "Price Upon Request",
+    "sqft": null,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/1672556/471a2c81ee224287b4c3916095c4f5dd_716x444.jpg",
+    "brokerageName": "ReeceNichols South Central Kansas",
+    "crexiUrl": "https://www.crexi.com/properties/kansas-greenlight-garagedominiums",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage",
+      "Special Purpose"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2311037,
+    "name": "Flex Space! Business + Real Estate included",
+    "description": "Real Estate+Business for Sale | 12,000 SQFT Prime Flex Space",
+    "city": "",
+    "state": "PA",
+    "price": null,
+    "priceStr": "Price Upon Request",
+    "sqft": 12000,
+    "investmentType": "Owner/User",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2311037/41fc5f4038924052b13a8b4318125aca_716x444.jpg",
+    "brokerageName": "RE/MAX Commercial",
+    "crexiUrl": "https://www.crexi.com/properties/pennsylvania-flex-space-business-real-estate-included",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": true,
+    "types": [
+      "Business for Sale",
+      "Industrial",
+      "Retail",
+      "Self Storage",
+      "Special Purpose"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2478045,
+    "name": "KO STORAGE",
+    "description": "Self Storage | 7.50% Cap Rate | 177 Units",
+    "city": "",
+    "state": "NE",
+    "price": 2485000,
+    "priceStr": "$2.5M",
+    "sqft": 20647,
+    "investmentType": "Stabilized",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2478045/859921a5a7cb43f9b130ebc3594c2c9d_716x444.jpg",
+    "brokerageName": "Franklin Street Tampa",
+    "crexiUrl": "https://www.crexi.com/properties/new-hampshire-ko-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": 7.5
+  },
+  {
+    "id": 2458098,
+    "name": "Bayfield Storage and Office Supply - Bayfield, CO",
+    "description": "Bayfield Storage & Office Supply | 75,000 SF | Business & Real Estate",
+    "city": "Bayfield",
+    "state": "CO",
+    "price": 6100000,
+    "priceStr": "$6.1M",
+    "sqft": 75500,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2458098/5d592e542bfc43189869db023d56528a_716x444.jpg",
+    "brokerageName": "ParaSell Inc",
+    "crexiUrl": "https://www.crexi.com/properties/colorado-bayfield-storage-and-office-supply---bayfield-co",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 1054020,
+    "name": "Main Street Garden",
+    "description": "Garden Center Business is also for sale but not included in asking",
+    "city": "",
+    "state": "NO",
+    "price": 5000000,
+    "priceStr": "$5.0M",
+    "sqft": 13728,
+    "investmentType": "Redevelopment",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/1054020/61dde472dfd14cdab9f29844976c6696_716x444.jpg",
+    "brokerageName": "Kent Hunter Realty",
+    "crexiUrl": "https://www.crexi.com/properties/north-carolina-main-street-garden",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Mixed Use",
+      "Office",
+      "Self Storage",
+      "Special Purpose"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2519020,
+    "name": "Finish Line Car Wash & American Self Storage",
+    "description": "Turnkey Car Wash & Self Storage Business with Real Estate",
+    "city": "",
+    "state": "GA",
+    "price": 1187000,
+    "priceStr": "$1.2M",
+    "sqft": 8000,
+    "investmentType": "Owner/User",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2519020/e64a3d8603d948dc8b97197df3a83460_716x444.jpg",
+    "brokerageName": "Matthews",
+    "crexiUrl": "https://www.crexi.com/properties/georgia-409-east-3rd-street",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage",
+      "Special Purpose"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 1693709,
+    "name": "FORMER CVS DRUG STORE",
+    "description": "10,922 SF FREESTANDING BUILDING ON 1.11 ACRES",
+    "city": "",
+    "state": "MI",
+    "price": 1275000,
+    "priceStr": "$1.3M",
+    "sqft": 10922,
+    "investmentType": "Net Lease",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/1693709/44bcfe1385084c8cafbfcdf7effd70cd_716x444.jpg",
+    "brokerageName": "Encore Real Estate Investment Services",
+    "crexiUrl": "https://www.crexi.com/properties/michigan-vacant-cvs-w-2-years-of-nnn-rent",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Mixed Use",
+      "Office",
+      "Retail",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2466500,
+    "name": "Destination RV Storage",
+    "description": "N/A",
+    "city": "",
+    "state": "LA",
+    "price": 7650000,
+    "priceStr": "$7.7M",
+    "sqft": 117830,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2466500/df46c2076997475f9abb93b7dded5e34_716x444.jpg",
+    "brokerageName": "Lindsey Self Storage",
+    "crexiUrl": "https://www.crexi.com/properties/louisiana-destination-rv-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2417925,
+    "name": "Creekside Storage - Harriman, TN",
+    "description": "Self Storage with High Occupancy!!!",
+    "city": "Harriman",
+    "state": "TN",
+    "price": 1800000,
+    "priceStr": "$1.8M",
+    "sqft": 14925,
+    "investmentType": "Stabilized",
+    "status": "Call For Offers",
+    "thumbnailUrl": "https://images.crexi.com/assets/2417925/0c6b89ba724d40a79e5a82ec2671352f_716x444.jpg",
+    "brokerageName": "EquiCap Commercial, LLC, TN",
+    "crexiUrl": "https://www.crexi.com/properties/tennessee-creekside-storage---harriman-midtown-tn",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": true,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2466228,
+    "name": "440 Storage",
+    "description": "New Offering: Little Rock-North Little Rock-Conway, AR | List Price: $2,500,000 | 33,825 NRSF | Self",
+    "city": "Conway",
+    "state": "AR",
+    "price": 2500000,
+    "priceStr": "$2.5M",
+    "sqft": null,
+    "investmentType": "Value Add",
+    "status": "Call For Offers",
+    "thumbnailUrl": "https://images.crexi.com/assets/2466228/b4fb4ff82d6240f484defa1b6a743077_716x444.jpg",
+    "brokerageName": "SkyView Advisors",
+    "crexiUrl": "https://www.crexi.com/properties/arkansas-440-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2226992,
+    "name": "655 W Irving Park Rd",
+    "description": "several commercial condos for sale. cafe, laundry, storage, office and 2 penthouses",
+    "city": "",
+    "state": "IL",
+    "price": null,
+    "priceStr": "Price Upon Request",
+    "sqft": 1017968,
+    "investmentType": "Value Add",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2226992/f386621b21ba49f0ab24da4ebc1cbbaa_716x444.jpg",
+    "brokerageName": "Jameson Commercial Real Estate",
+    "crexiUrl": "https://www.crexi.com/properties/illinois-655-w-irving-park-rd",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Multifamily",
+      "Office",
+      "Hospitality",
+      "Mixed Use",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2232694,
+    "name": "Diamond Self Storage",
+    "description": "Self Storage | 95% Occ | 6.75% CAP",
+    "city": "",
+    "state": "AK",
+    "price": 4500000,
+    "priceStr": "$4.5M",
+    "sqft": 49754,
+    "investmentType": "Stabilized",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2232694/14237e250d4f4c62818c4e094ccef861_716x444.jpg",
+    "brokerageName": "American RE Associates, Inc.",
+    "crexiUrl": "https://www.crexi.com/properties/alaska-diamond-self-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": true,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": 6.75
+  },
+  {
+    "id": 2284403,
+    "name": "Prime 12.84-Acre Mixed-Use Land",
+    "description": "Prime 12.84-Acre Mixed-Use Commercial Opportunity on US-301",
+    "city": "",
+    "state": "FL",
+    "price": 1100000,
+    "priceStr": "$1.1M",
+    "sqft": null,
+    "investmentType": null,
+    "status": "Highest & Best",
+    "thumbnailUrl": "https://images.crexi.com/assets/2284403/85cb48710a084e1981c632ed14488b9a_716x444.jpg",
+    "brokerageName": "Bosshardt Realty Services",
+    "crexiUrl": "https://www.crexi.com/properties/florida-prime-1284-acre-mixed-use-land",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Land",
+      "Mixed Use",
+      "Multifamily",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2342953,
+    "name": "Glacier West Chelan",
+    "description": "Industrial | 39,080 SqFt",
+    "city": "",
+    "state": "WA",
+    "price": 3250000,
+    "priceStr": "$3.2M",
+    "sqft": 39080,
+    "investmentType": "Value Add",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2342953/5cf620222f404dcaad3886fcafffa686_716x444.jpg",
+    "brokerageName": "Marcus & Millichap - Seattle",
+    "crexiUrl": "https://www.crexi.com/properties/washington-glacier-west-chelan",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Industrial",
+      "Mixed Use",
+      "Self Storage",
+      "Special Purpose"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2454336,
+    "name": "Hylie Storage",
+    "description": "Self Storage and Commercial Investment Opportunity",
+    "city": "",
+    "state": "KS",
+    "price": 1000000,
+    "priceStr": "$1.0M",
+    "sqft": 72092,
+    "investmentType": "Value Add",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2454336/0986028258ca40929991c5d701954b15_716x444.jpg",
+    "brokerageName": "Commercial Collective",
+    "crexiUrl": "https://www.crexi.com/properties/kansas-hylie-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": true,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2145814,
+    "name": "Downtown Commercial building.",
+    "description": "Mixed Use | 1,400 SqFt",
+    "city": "",
+    "state": "IA",
+    "price": 65000,
+    "priceStr": "$65K",
+    "sqft": 1400,
+    "investmentType": null,
+    "status": "Highest & Best",
+    "thumbnailUrl": "https://images.crexi.com/assets/2145814/bd2b896637444ec596f460f7152d4b74_716x444.jpg",
+    "brokerageName": "Thomas Realty",
+    "crexiUrl": "https://www.crexi.com/properties/iowa-downtown-commercial-building",
+    "isNew": false,
+    "hasOM": false,
+    "opportunityZone": false,
+    "types": [
+      "Mixed Use",
+      "Office",
+      "Retail",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2464276,
+    "name": "Walnut Circle Auto Shop | Owner-User/Investment Opportunity",
+    "description": "Vacant Auto Shop | 0.43 AC Corner Lot | Owner-User or Investment Opportunity",
+    "city": "",
+    "state": "TX",
+    "price": 950000,
+    "priceStr": "$950K",
+    "sqft": 2340,
+    "investmentType": "Value Add",
+    "status": "Call For Offers",
+    "thumbnailUrl": "https://images.crexi.com/assets/2464276/e38676ac5e7148f388997a6907789170_716x444.jpg",
+    "brokerageName": "Naseem Sadeghian",
+    "crexiUrl": "https://www.crexi.com/properties/texas-walnut-circle-auto-shop-owner-userinvestment-opportunity",
+    "isNew": false,
+    "hasOM": false,
+    "opportunityZone": false,
+    "types": [
+      "Industrial",
+      "Mixed Use",
+      "Self Storage",
+      "Special Purpose"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2350205,
+    "name": "Storage Wise Portfolio (4)",
+    "description": "New Offering: Angier & Willow Spring/Hayesville, NC MSA | 79,580 NRSF | Self-Storage",
+    "city": "Hayesville",
+    "state": "NO",
+    "price": null,
+    "priceStr": "Price Upon Request",
+    "sqft": null,
+    "investmentType": "Value Add",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2350205/b986aa26f68f4894be6e4ed220d3a701_716x444.jpg",
+    "brokerageName": "SkyView Advisors",
+    "crexiUrl": "https://www.crexi.com/properties/north-carolina-storage-wise-portfolio-4",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2492220,
+    "name": "Fort Knox Self-Storage",
+    "description": "Self Storage | 5.55% CAP | 624 Units",
+    "city": "",
+    "state": "NE",
+    "price": 9500000,
+    "priceStr": "$9.5M",
+    "sqft": 62978,
+    "investmentType": "Value Add",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2492220/b18d5742e4944c9cbcd9795ea6c62f74_716x444.jpg",
+    "brokerageName": "Matthews",
+    "crexiUrl": "https://www.crexi.com/properties/new-jersey-fort-knox-self-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": true,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": 5.55
+  },
+  {
+    "id": 1673602,
+    "name": "401 Decatur st - 505 Conti st",
+    "description": "Mixed Use | 12,822 SqFt",
+    "city": "",
+    "state": "LA",
+    "price": 2975000,
+    "priceStr": "$3.0M",
+    "sqft": 12822,
+    "investmentType": "Value Add",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/1673602/4c5f3e246dd7477182eb62b822a3c46e_716x444.jpg",
+    "brokerageName": "Jon Huffman Real Estate",
+    "crexiUrl": "https://www.crexi.com/properties/louisiana-401-decatur-st---505-conti-st",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Mixed Use",
+      "Multifamily",
+      "Office",
+      "Retail",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2464248,
+    "name": "Luna Road Value-Add Office | Dallas, TX",
+    "description": "Value-Add Office/Retail | Owner-User or Investment Opportunity",
+    "city": "Dallas",
+    "state": "TX",
+    "price": 995000,
+    "priceStr": "$995K",
+    "sqft": 982,
+    "investmentType": "Value Add",
+    "status": "Call For Offers",
+    "thumbnailUrl": "https://images.crexi.com/assets/2464248/f6cc289d6d5f435a9b14e66dcf1294d2_716x444.jpg",
+    "brokerageName": "Naseem Sadeghian",
+    "crexiUrl": "https://www.crexi.com/properties/texas-luna-road-value-add-office-dallas-tx",
+    "isNew": false,
+    "hasOM": false,
+    "opportunityZone": false,
+    "types": [
+      "Land",
+      "Mixed Use",
+      "Office",
+      "Self Storage",
+      "Special Purpose"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2419586,
+    "name": "2403 La Vista Drive Property",
+    "description": "Prime Redevelopment within Federal Opportunity Zone in Burlington, NC",
+    "city": "Prime Redevelopment within Federal Opportunity Zone in Burlington",
+    "state": "NO",
+    "price": 825000,
+    "priceStr": "$825K",
+    "sqft": 8808,
+    "investmentType": "Redevelopment",
+    "status": "Call For Offers",
+    "thumbnailUrl": "https://images.crexi.com/assets/2419586/ab48612f70564dd49bba3ef6df3d0683_716x444.jpg",
+    "brokerageName": "Infinito Real Estate Group",
+    "crexiUrl": "https://www.crexi.com/properties/north-carolina-2403-la-vista-drive-property",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": true,
+    "types": [
+      "Land",
+      "Multifamily",
+      "Retail",
+      "Self Storage",
+      "Senior Living"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 1668970,
+    "name": "Prime Hard Corner Location",
+    "description": "Development land on hard corner! Busy intersection!",
+    "city": "",
+    "state": "TX",
+    "price": 1550000,
+    "priceStr": "$1.6M",
+    "sqft": 184258,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/1668970/d3be38f168d540eeb7f24507cebdf009_716x444.jpg",
+    "brokerageName": "KW Commercial Texas",
+    "crexiUrl": "https://www.crexi.com/properties/texas-prime-hard-corner-location",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Industrial",
+      "Land",
+      "Multifamily",
+      "Retail",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2456175,
+    "name": "Butler Boat & RV Storage",
+    "description": "Self Storage | 359 Units | $12,953/unit",
+    "city": "",
+    "state": "SO",
+    "price": 4650000,
+    "priceStr": "$4.7M",
+    "sqft": 140825,
+    "investmentType": "Value Add",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2456175/91545279969b4c7fb3e834d6aab2fbea_716x444.jpg",
+    "brokerageName": "Marcus & Millichap - Atlanta",
+    "crexiUrl": "https://www.crexi.com/properties/south-carolina-butler-boat-rv-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 1927363,
+    "name": "38 Coco Plum Dr, Marathon, FL 33050",
+    "description": "five contiguous lots totaling approximately 30,000 square feet",
+    "city": "Marathon",
+    "state": "FL",
+    "price": 4950000,
+    "priceStr": "$5.0M",
+    "sqft": 30000,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/1927363/b07bd1ef61fc4b9ab77a9ac561ac1575_716x444.jpg",
+    "brokerageName": "RE/MAX All Keys Real Estate",
+    "crexiUrl": "https://www.crexi.com/properties/florida-38-coco-plum-dr-marathon-fl-33050",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Industrial",
+      "Mixed Use",
+      "Retail",
+      "Self Storage",
+      "Special Purpose"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2438265,
+    "name": "Mountain View MHP & A1 Store & Lock Storage",
+    "description": "Mountain View MHP & A1 Store & Lock Storage",
+    "city": "",
+    "state": "MO",
+    "price": 2300000,
+    "priceStr": "$2.3M",
+    "sqft": null,
+    "investmentType": "Value Add",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2438265/73dbadebaa62439baedbdf7c43993fdd_716x444.jpg",
+    "brokerageName": "Matthews",
+    "crexiUrl": "https://www.crexi.com/properties/missouri-mountain-view-mhp-a1-store-lock-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Mobile Home Park",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 1896322,
+    "name": "3387 Riego Rd",
+    "description": "Industrial | 8,000 SqFt",
+    "city": "",
+    "state": "CA",
+    "price": 3450000,
+    "priceStr": "$3.5M",
+    "sqft": 8000,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/1896322/9d9de67dfb924cd6babedb1955e5df08_716x444.jpg",
+    "brokerageName": "Crossroad Ventures Group",
+    "crexiUrl": "https://www.crexi.com/properties/california-3387-riego-rd",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Industrial",
+      "Land",
+      "Mixed Use",
+      "Self Storage",
+      "Special Purpose"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2208967,
+    "name": "Cressmoor Commercial",
+    "description": "Mixed Use Redevelopment Opportunity",
+    "city": "",
+    "state": "IN",
+    "price": 1487760,
+    "priceStr": "$1.5M",
+    "sqft": null,
+    "investmentType": "Redevelopment",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2208967/e4f808a127ca4a54921d8e966755c5fc_716x444.jpg",
+    "brokerageName": "Advent Real Estate Advisors",
+    "crexiUrl": "https://www.crexi.com/properties/indiana-cressmoor-commercial",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Mixed Use",
+      "Retail",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2306692,
+    "name": "81 W Quarry Ridge Ct",
+    "description": "Self Storage | 219 Units | $11,416/unit",
+    "city": "",
+    "state": "KY",
+    "price": 2500000,
+    "priceStr": "$2.5M",
+    "sqft": 23100,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2306692/8e16e3f1b4e64448a0a97484f750b3ba_716x444.jpg",
+    "brokerageName": "Land Store Inc",
+    "crexiUrl": "https://www.crexi.com/properties/kentucky-81-w-quarry-ridge-ct",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2449611,
+    "name": "Blanchard Mini Storage",
+    "description": "100% Occupied Storage Facility",
+    "city": "",
+    "state": "OK",
+    "price": 1200000,
+    "priceStr": "$1.2M",
+    "sqft": 12520,
+    "investmentType": "Stabilized",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2449611/d8c404f7951a4fdfbc241b7aba690211_716x444.jpg",
+    "brokerageName": "Vaulted Commercial Real Estate",
+    "crexiUrl": "https://www.crexi.com/properties/oklahoma-blanchard-mini-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Business for Sale",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2478399,
+    "name": "9740-9748 Titan Court",
+    "description": "Industrial Condominiums",
+    "city": "",
+    "state": "CO",
+    "price": null,
+    "priceStr": "Price Upon Request",
+    "sqft": null,
+    "investmentType": "Owner/User",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2478399/1dc6ca7958ba4fcb8dc6b6a350c89ff2_716x444.jpg",
+    "brokerageName": "Pinnacle Real Estate Advisors",
+    "crexiUrl": "https://www.crexi.com/properties/colorado-9740-9748-titan-court",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Industrial",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2522643,
+    "name": "3003 Scarlett Street",
+    "description": "Office | 76,664 SqFt",
+    "city": "",
+    "state": "GA",
+    "price": null,
+    "priceStr": "Price Upon Request",
+    "sqft": 76664,
+    "investmentType": "Value Add",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2522643/547aaf5a21754091a4f270c0bb295e39_716x444.jpg",
+    "brokerageName": "Newmark Knight Frank Saint Simons Island",
+    "crexiUrl": "https://www.crexi.com/properties/georgia-3003-scarlett-street",
+    "isNew": true,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Office",
+      "Self Storage",
+      "Industrial"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 1826732,
+    "name": "Early Sun Drive Development",
+    "description": "Self Storage",
+    "city": "",
+    "state": "CO",
+    "price": 1300000,
+    "priceStr": "$1.3M",
+    "sqft": null,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/1826732/5b8ba34d6d1c468f8152ec42a7707bf9_716x444.jpg",
+    "brokerageName": "Cushman & Wakefield - Denver, Colorado",
+    "crexiUrl": "https://www.crexi.com/properties/colorado-early-sun-drive-development",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage",
+      "Industrial",
+      "Multifamily",
+      "Special Purpose",
+      "Land"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2196242,
+    "name": "Louisiana Self Storage Portfolio",
+    "description": "Two facilities totaling \u00b134,573 NRSF located \u00b111.69 miles from one another",
+    "city": "",
+    "state": "LA",
+    "price": 2810000,
+    "priceStr": "$2.8M",
+    "sqft": 34573,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2196242/7dfbcc86b4a2465eac2b7a246f719e28_716x444.jpg",
+    "brokerageName": "Matthews",
+    "crexiUrl": "https://www.crexi.com/properties/louisiana-louisiana-self-storage-portfolio",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2319941,
+    "name": "Manley Indoor Climate Controlled Self Storage - Morristown",
+    "description": "New Class A Climate-Controlled Storage | Strong NOI and 6.5 Acres for Significant Future Expansion",
+    "city": "",
+    "state": "TN",
+    "price": 1595000,
+    "priceStr": "$1.6M",
+    "sqft": null,
+    "investmentType": "Value Add",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2319941/389c7cb9bc9242e8b91811adfc324b82_716x444.jpg",
+    "brokerageName": "10 Commercial Properties",
+    "crexiUrl": "https://www.crexi.com/properties/tennessee-manley-indoor-climate-controlled-self-storage---morristown",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": true,
+    "types": [
+      "Business for Sale",
+      "Self Storage",
+      "Special Purpose"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2257404,
+    "name": "Trailwood Storage South",
+    "description": "Mixed Use // 100 Percent Climate Controlled Self-Storage // Flex Retail // Flex Warehouse",
+    "city": "",
+    "state": "TX",
+    "price": null,
+    "priceStr": "Price Upon Request",
+    "sqft": 40100,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2257404/547b666b13fa4deeb0252a0c6765cc0c_716x444.jpg",
+    "brokerageName": "Marcus & Millichap - Houston",
+    "crexiUrl": "https://www.crexi.com/properties/texas-trailwood-storage-south",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Industrial",
+      "Mixed Use",
+      "Retail",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2478328,
+    "name": "Mission-Critical Outdoor Storage & Administrative Facility",
+    "description": "Mission-Critical Outdoor Storage & Administrative Facility | Providence, RI MSA",
+    "city": "Providence",
+    "state": "MA",
+    "price": 2803125,
+    "priceStr": "$2.8M",
+    "sqft": 13000,
+    "investmentType": "Sale/Leaseback",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2478328/409b8b87233d43e3b123b87ecfe301f9_716x444.jpg",
+    "brokerageName": "Stream Capital Partners",
+    "crexiUrl": "https://www.crexi.com/properties/massachusetts-mission-critical-outdoor-storage-administrative-facility",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Industrial",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2349188,
+    "name": "6240 U.S. Highway 277",
+    "description": "Self Storage | 321 Units | 7 Acre Lot",
+    "city": "",
+    "state": "OK",
+    "price": 2399000,
+    "priceStr": "$2.4M",
+    "sqft": 54400,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2349188/cb87307d43da4ca4b5bdacc931d33f22_716x444.jpg",
+    "brokerageName": "Johnson Commercial Group",
+    "crexiUrl": "https://www.crexi.com/properties/oklahoma-6240-us-highway-277",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2456217,
+    "name": "Lincoln Road Storage",
+    "description": "Self Storage | 176 Units | 21,260 NRSF | Two Locations | Expansion Room",
+    "city": "",
+    "state": "LA",
+    "price": 1200000,
+    "priceStr": "$1.2M",
+    "sqft": null,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2456217/c165a6acd0dc48c5954fa9abefcf1b6f_716x444.jpg",
+    "brokerageName": "Franklin Street Tampa",
+    "crexiUrl": "https://www.crexi.com/properties/louisiana-lincoln-road-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2518497,
+    "name": "Rupp's Indoor & Outdoor Storage",
+    "description": "High Visibility MN Self Storage with Approved Expansion",
+    "city": "",
+    "state": "MN",
+    "price": 3200000,
+    "priceStr": "$3.2M",
+    "sqft": 39925,
+    "investmentType": "Value Add",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2518497/2cef3880f1914e5f857f104dd613dae3_716x444.jpg",
+    "brokerageName": "Argus Self Storage Advisors",
+    "crexiUrl": "https://www.crexi.com/properties/minnesota-rupps-indoor-outdoor-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2349119,
+    "name": "Cold Storage on Oslo Road",
+    "description": "Industrial | 4,800 SqFt",
+    "city": "",
+    "state": "FL",
+    "price": 2200000,
+    "priceStr": "$2.2M",
+    "sqft": 4800,
+    "investmentType": "Owner/User",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2349119/234c03dc85db4fa98a8303adf405a81e_716x444.jpg",
+    "brokerageName": "Alex MacWilliam Real Estate",
+    "crexiUrl": "https://www.crexi.com/properties/florida-cold-storage-on-oslo-road",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Industrial",
+      "Mixed Use",
+      "Self Storage",
+      "Special Purpose"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2320450,
+    "name": "Sawyer Rapids RV Park- 24828 State Hwy 38, Elkton Oregon",
+    "description": "Rare Umpqua Riverfront Income Property | 9.4% In-Place Cap Rate | Significant Value-Add Upside",
+    "city": "",
+    "state": "OR",
+    "price": 1550000,
+    "priceStr": "$1.6M",
+    "sqft": null,
+    "investmentType": "Value Add",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2320450/7320b40308f24752976309246b640430_716x444.jpg",
+    "brokerageName": "Coldwell Banker Pro West Commercial Real Estate Medford",
+    "crexiUrl": "https://www.crexi.com/properties/oregon-sawyer-rapids-rv-park--24828-state-hwy-38-elkton-oregon",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Mobile Home Park",
+      "Multifamily",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 1546633,
+    "name": "QSR, Gas, Hotel, Industrial Land at Fortuna Mill",
+    "description": "QSR, Gas, Industrial and Commercial Land For Sale",
+    "city": "",
+    "state": "CA",
+    "price": null,
+    "priceStr": "Price Upon Request",
+    "sqft": null,
+    "investmentType": "Redevelopment",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/1546633/2bb9cd280a464d2f96ce19e43ed8a652_716x444.jpg",
+    "brokerageName": "Commercial NNN Lease",
+    "crexiUrl": "https://www.crexi.com/properties/california-fortuna-mill-commerce-center",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Industrial",
+      "Land",
+      "Retail",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2333603,
+    "name": "Guardian 1 Indoor / Outdoor Self Storage Facility",
+    "description": "Indoor / Outdoor Self Storage Facility For Sale - Lake Norman",
+    "city": "",
+    "state": "NO",
+    "price": 4000000,
+    "priceStr": "$4.0M",
+    "sqft": 33785,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2333603/fa2ae438f33a4bbcb42a96dd675f7d28_716x444.jpg",
+    "brokerageName": "Lake Norman Realty Inc",
+    "crexiUrl": "https://www.crexi.com/properties/north-carolina-guardian-1-2-indoor-outdoor-self-storage-facilities",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 1744719,
+    "name": "2401 & 2451 CR 130 Hutto, TX",
+    "description": "Industrial/Commercial/Mixed Use",
+    "city": "Hutto",
+    "state": "TX",
+    "price": null,
+    "priceStr": "Price Upon Request",
+    "sqft": 1650,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/1744719/44055bb055f743768cbd916304717c04_716x444.jpg",
+    "brokerageName": "Keller Williams Realty Lone Star",
+    "crexiUrl": "https://www.crexi.com/properties/texas-2401-2451-cr-130-hutto-tx",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Industrial",
+      "Land",
+      "Mixed Use",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2363958,
+    "name": "USA Self Storage \u2013 Lonsdale",
+    "description": "New Offering: Hot Springs, AR MSA | List Price: $2,700,000 | 24,643 NRSF | Self-Storage",
+    "city": "Hot Springs",
+    "state": "AR",
+    "price": 2700000,
+    "priceStr": "$2.7M",
+    "sqft": null,
+    "investmentType": "Value Add",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2363958/354025275b6d4bde9c1d12ec90f30d26_716x444.jpg",
+    "brokerageName": "SkyView Advisors",
+    "crexiUrl": "https://www.crexi.com/properties/arkansas-usa-self-storage-lonsdale",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2352090,
+    "name": "Jasmine Street Storage & Industrial (Seller Financing)",
+    "description": "Self-Storage, Flex, Industrial, Contractor Space",
+    "city": "",
+    "state": "CA",
+    "price": 1850000,
+    "priceStr": "$1.9M",
+    "sqft": 7920,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2352090/9e37b16de23f40ccac06e62fbce616ea_716x444.jpg",
+    "brokerageName": "Calvary Realty",
+    "crexiUrl": "https://www.crexi.com/properties/california-jasmine-street-storage-industrial",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Industrial",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2467190,
+    "name": "Meigs Mini Storage",
+    "description": "Self Storage | 50 Units | $5,400/unit",
+    "city": "",
+    "state": "GA",
+    "price": 270000,
+    "priceStr": "$270K",
+    "sqft": null,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2467190/ff5d91463d9f467484a469f9c1714689_716x444.jpg",
+    "brokerageName": "Corry Group",
+    "crexiUrl": "https://www.crexi.com/properties/georgia-meigs-mini-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": true,
+    "types": [
+      "Self Storage",
+      "Land"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2443223,
+    "name": "Carlisle Boat & RV Development",
+    "description": "Self Storage | 368 Units",
+    "city": "",
+    "state": "PA",
+    "price": null,
+    "priceStr": "Price Upon Request",
+    "sqft": 853340,
+    "investmentType": "Owner/User",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2443223/d52e80724e244377b1967246187d1b7e_716x444.jpg",
+    "brokerageName": "Marcus & Millichap - Philadelphia",
+    "crexiUrl": "https://www.crexi.com/properties/pennsylvania-carlisle-boat-rv-development",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 1301111,
+    "name": "21-Acres in Kyle, TX",
+    "description": "Higher End Mixed-Use Development Property",
+    "city": "Acres in Kyle",
+    "state": "TX",
+    "price": null,
+    "priceStr": "Price Upon Request",
+    "sqft": 921294,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/1301111/ba5a1365b7614980bdfd0b15d1b93b69_716x444.jpg",
+    "brokerageName": "Sierra Commercial",
+    "crexiUrl": "https://www.crexi.com/properties/texas-21-acre---mixed-use-development-site",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Industrial",
+      "Land",
+      "Mixed Use",
+      "Retail",
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2072407,
+    "name": "Cataula Self Storage",
+    "description": "187 unit self storage property for sale",
+    "city": "",
+    "state": "GA",
+    "price": 2233000,
+    "priceStr": "$2.2M",
+    "sqft": 19996,
+    "investmentType": "Value Add",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2072407/1c1f4cc2ffbf45779be565a6d27b4fe9_716x444.jpg",
+    "brokerageName": "Jefcoat Real Estate Services, LLC",
+    "crexiUrl": "https://www.crexi.com/properties/georgia-cataula-self-storage",
+    "isNew": false,
+    "hasOM": false,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2341680,
+    "name": "Hobson Storage",
+    "description": "Self Storage | 7.81% CAP",
+    "city": "",
+    "state": "IL",
+    "price": 1525000,
+    "priceStr": "$1.5M",
+    "sqft": null,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2341680/a757284985524596932ae48d72b8e06f_716x444.jpg",
+    "brokerageName": "EquiCap Commercial",
+    "crexiUrl": "https://www.crexi.com/properties/illinois-hobson-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": 7.81
+  },
+  {
+    "id": 1922524,
+    "name": "Car Garage / Storage / Creative Work",
+    "description": "New to Market - New Build High End Storage Facility",
+    "city": "",
+    "state": "MN",
+    "price": 4900000,
+    "priceStr": "$4.9M",
+    "sqft": 29370,
+    "investmentType": "Value Add",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/1922524/2a819d6682744692802f2938f92f4f91_716x444.jpg",
+    "brokerageName": "Fort Inc",
+    "crexiUrl": "https://www.crexi.com/properties/minnesota-penny-lane-car-garage-storage",
+    "isNew": false,
+    "hasOM": false,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage",
+      "Special Purpose"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 1572641,
+    "name": "Karstens XL Storage",
+    "description": "~26,960 SF SELF STORAGE FACILITY ON 9.268 AC",
+    "city": "",
+    "state": "TX",
+    "price": 1350000,
+    "priceStr": "$1.4M",
+    "sqft": 26960,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/1572641/40e4793d5d23486186b068e0f2b11e13_716x444.jpg",
+    "brokerageName": "Oldham Goodwin Group Bryan / College Station",
+    "crexiUrl": "https://www.crexi.com/properties/texas-karstens-xl-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2319055,
+    "name": "Cosby Hwy Climate Controlled Self Storage",
+    "description": "Income-Producing Climate Storage | Limited Competition | Prime Cosby Location",
+    "city": "",
+    "state": "TN",
+    "price": 1400000,
+    "priceStr": "$1.4M",
+    "sqft": 20835,
+    "investmentType": "Stabilized",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2319055/14c8f96bf58e491887813a1d591acc5c_716x444.jpg",
+    "brokerageName": "10 Commercial Properties",
+    "crexiUrl": "https://www.crexi.com/properties/tennessee-cosby-hwy-climate-controlled-self-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Business for Sale",
+      "Self Storage",
+      "Special Purpose"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2363866,
+    "name": "USA Self Storage - Balboa",
+    "description": "New Offering: Hot Springs, AR MSA | List Price: $9,500,000 | 181,808 NRSF | Self-Storage",
+    "city": "Hot Springs",
+    "state": "AR",
+    "price": 9500000,
+    "priceStr": "$9.5M",
+    "sqft": null,
+    "investmentType": "Value Add",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2363866/2b9604451a5547ee9b50f0622106a3d2_716x444.jpg",
+    "brokerageName": "SkyView Advisors",
+    "crexiUrl": "https://www.crexi.com/properties/arkansas-usa-self-storage---balboa",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2328778,
+    "name": "Mustang Storage",
+    "description": "C of O Self Storage Opportunity",
+    "city": "",
+    "state": "OK",
+    "price": 7500000,
+    "priceStr": "$7.5M",
+    "sqft": 97835,
+    "investmentType": "Institutional",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2328778/59e7c18c14ed498186f9ac28677d63b6_716x444.jpg",
+    "brokerageName": "Jones Investment Real Estate",
+    "crexiUrl": "https://www.crexi.com/properties/oklahoma-mustang-storage",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 1815547,
+    "name": "RV and Boat Storage Facility in Brookshire",
+    "description": "3 ACRES - BOAT & RV STorage, Rare Below-Market Opportunity Just Outside Houston",
+    "city": "",
+    "state": "TX",
+    "price": 1475000,
+    "priceStr": "$1.5M",
+    "sqft": 130680,
+    "investmentType": null,
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/1815547/605c7f688d8a4ef79b1fdf0a96317075_716x444.jpg",
+    "brokerageName": "Houston One Business Brokers",
+    "crexiUrl": "https://www.crexi.com/properties/texas-rv-and-boat-storage-facility",
+    "isNew": false,
+    "hasOM": true,
+    "opportunityZone": false,
+    "types": [
+      "Retail",
+      "Industrial",
+      "Land",
+      "Self Storage",
+      "Special Purpose"
+    ],
+    "capRate": null
+  },
+  {
+    "id": 2502564,
+    "name": "16881 SW Archer Rd",
+    "description": "16881 SW Archer Rd, Archer, FL 32618",
+    "city": "Archer",
+    "state": "FL",
+    "price": 1700000,
+    "priceStr": "$1.7M",
+    "sqft": 16440,
+    "investmentType": "Owner/User",
+    "status": "On-Market",
+    "thumbnailUrl": "https://images.crexi.com/assets/2502564/2f16e9b3b3a24816993d3f0600a421f0_716x444.jpg",
+    "brokerageName": "Coldwell Banker M. M. Parrish Realtors",
+    "crexiUrl": "https://www.crexi.com/properties/florida-16881-sw-archer-rd",
+    "isNew": false,
+    "hasOM": false,
+    "opportunityZone": false,
+    "types": [
+      "Self Storage"
+    ],
+    "capRate": null
+  }
+];
+
+function formatPrice(p){ return p>=1000000?`$${(p/1000000).toFixed(1)}M`:`$${(p/1000).toFixed(0)}K`; }
+
+async function startCheckout(){
+  const stripe = Stripe(STRIPE_PK);
+  const res = await fetch("/api/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({priceId:PRICE_ID})});
+  const data = await res.json();
+  if(data.url){ window.location.href = data.url; }
+  else{ alert("Checkout error. Please try again."); }
+}
+
+function StorageIcon({size=24,color="white"}){
+  return(
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="20" height="5" rx="1"/>
+      <rect x="2" y="10" width="20" height="5" rx="1"/>
+      <rect x="2" y="17" width="20" height="5" rx="1"/>
+    </svg>
+  );
+}
+
+function HeartIcon({filled}){
+  return(
+    <svg width="16" height="16" viewBox="0 0 24 24" fill={filled?"#EF4444":"none"} stroke={filled?"#EF4444":"#64748B"} strokeWidth="2">
+      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+    </svg>
+  );
+}
+
+function ListingCard({listing, i, onTap, saved, onSave, locked}){
+  const colors = ["#E2E8F0","#DCFCE7","#FEF3C7","#DBEAFE","#FCE7F3","#F3E8FF"];
+  const bg = colors[i % colors.length];
+  return(
+    <div className={`listing-card card-enter ${locked?'locked':''}`} style={{animationDelay:`${i*.08}s`,opacity:locked?.6:1}}>
+      <div className="listing-img" style={{background:`linear-gradient(135deg,${bg},#CBD5E1)`,padding:0,overflow:"hidden"}} onClick={()=>!locked&&onTap(listing)}>
+        {listing.thumbnailUrl
+          ? <img src={listing.thumbnailUrl} alt={listing.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+          : <div className="listing-img-placeholder">
+              <StorageIcon size={40} color="#94A3B8"/>
+              <span style={{fontSize:12,color:"#94A3B8",fontWeight:500}}>{listing.sqft ? `${listing.sqft.toLocaleString()} sqft` : "Self Storage"}</span>
+            </div>
+        }
+        {listing.status==="Auction" && <span className="listing-badge featured">Auction</span>}
+        {listing.status!=="Auction" && <span className="listing-badge">Crexi</span>}
+        <button className={`listing-save ${saved?'saved':''}`} onClick={e=>{e.stopPropagation();onSave(listing.id);}}>
+          <HeartIcon filled={saved}/>
+        </button>
+        {locked && (
+          <div style={{position:"absolute",inset:0,background:"rgba(255,255,255,.6)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:8}}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            <span style={{fontSize:12,fontWeight:600,color:"#64748B"}}>Subscribe to unlock</span>
+          </div>
+        )}
+      </div>
+      <div className="listing-body" onClick={()=>!locked&&onTap(listing)}>
+        <div className="listing-price">{listing.priceStr}</div>
+        <div className="listing-name">{listing.name}</div>
+        <div className="listing-location">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          {listing.city ? `${listing.city}, ${listing.state}` : listing.state || "United States"}
+        </div>
+        <div className="listing-metrics">
+          <div className="metric">
+            <div className="metric-val">{listing.capRate ? `${listing.capRate}%` : "—"}</div>
+            <div className="metric-key">Cap Rate</div>
+          </div>
+          <div className="metric">
+            <div className="metric-val">{listing.sqft ? `${(listing.sqft/1000).toFixed(0)}K` : "—"}</div>
+            <div className="metric-key">Sq Ft</div>
+          </div>
+          <div className="metric">
+            <div className="metric-val">{listing.investmentType ?? listing.status ?? "—"}</div>
+            <div className="metric-key">Type</div>
+          </div>
+        </div>
+        <div className="listing-tags">
+          {listing.opportunityZone && <span className="listing-tag">Opp. Zone</span>}
+          {listing.hasOM && <span className="listing-tag">OM Available</span>}
+          {listing.investmentType && listing.investmentType !== "N/A" && <span className="listing-tag">{listing.investmentType}</span>}
+          {listing.brokerageName && <span className="listing-tag">{listing.brokerageName.split(" ").slice(0,2).join(" ")}</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailSheet({listing, onClose, onPaywall}){
+  if(!listing) return null;
+  return(
+    <div className="overlay" onClick={onClose}>
+      <div className="detail-sheet" onClick={e=>e.stopPropagation()}>
+        <div className="detail-handle"/>
+        <div className="detail-img">
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+            <StorageIcon size={48} color="#94A3B8"/>
+            <span style={{fontSize:13,color:"#94A3B8"}}>{listing.units} Units · {listing.sqft.toLocaleString()} sqft</span>
+          </div>
+        </div>
+        <div className="detail-body">
+          <div className="detail-price">{listing.priceStr}</div>
+          <div className="detail-name">{listing.name}</div>
+          <div style={{display:"flex",alignItems:"center",gap:4,fontSize:14,color:"var(--slate-light)",marginBottom:16}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            {listing.city}, {listing.state} · Listed on {listing.source}
+          </div>
+
+          <div className="detail-metrics">
+            {[["Cap Rate",`${listing.capRate}%`],["NOI",`$${(listing.noi/1000).toFixed(0)}K/yr`],["Units",listing.units],["Occupancy",`${listing.occupancy}%`],["Sq Ft",listing.sqft.toLocaleString()],["Acres",listing.acres]].map(([k,v])=>(
+              <div key={k} className="detail-metric">
+                <div className="detail-metric-val">{v}</div>
+                <div className="detail-metric-key">{k}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="detail-section">
+            <div className="detail-section-title">Description</div>
+            <p style={{fontSize:14,color:"var(--slate-mid)",lineHeight:1.65}}>{listing.description}</p>
+          </div>
+
+          <div className="detail-section">
+            <div className="detail-section-title">Property Details</div>
+            {[
+              ["Square Footage", listing.sqft ? listing.sqft.toLocaleString() + " sqft" : "—"],
+              ["Investment Type", listing.investmentType ?? "—"],
+              ["Status", listing.status ?? "—"],
+              ["Opportunity Zone", listing.opportunityZone ? "Yes" : "No"],
+              ["Offering Memorandum", listing.hasOM ? "Available" : "Not listed"],
+              ["Listed By", listing.brokerageName ?? "—"],
+            ].map(([k,v])=>(
+              <div key={k} className="detail-row">
+                <span className="detail-row-key">{k}</span>
+                <span className="detail-row-val">{v}</span>
+              </div>
+            ))}
+          </div>
+
+          {listing.types && listing.types.length > 0 && (
+            <div className="detail-section">
+              <div className="detail-section-title">Property Types</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                {listing.types.map(t=>(
+                  <span key={t} style={{background:"var(--green-pale)",color:"var(--green-deep)",fontSize:12,fontWeight:600,padding:"4px 12px",borderRadius:20}}>{t}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {listing.crexiUrl && (
+            <a href={listing.crexiUrl} target="_blank" rel="noreferrer" className="btn btn-green btn-lg btn-full" style={{marginBottom:12,textDecoration:"none"}}>
+              View Full Listing on Crexi
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>
+          )}
+          <button className="btn btn-outline btn-md btn-full" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PaywallSheet({onClose}){
+  const [loading,setLoading] = useState(false);
+  const [sel,setSel] = useState("monthly");
+
+  const handleCheckout = async()=>{
+    setLoading(true);
+    try{ await startCheckout(); }
+    catch(e){ alert("Checkout failed. Please try again."); setLoading(false); }
+  };
+
+  return(
+    <div className="overlay" onClick={onClose}>
+      <div className="paywall-sheet" onClick={e=>e.stopPropagation()}>
+        <div className="handle"/>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div style={{width:60,height:60,background:"linear-gradient(135deg,var(--green),var(--green-mid))",borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",boxShadow:"var(--shadow-green)"}}>
+            <StorageIcon size={30}/>
+          </div>
+          <div style={{fontFamily:"var(--font-display)",fontSize:26,fontWeight:700,color:"var(--slate)",marginBottom:8}}>
+            Unlock Full Access
+          </div>
+          <div style={{fontSize:15,color:"var(--slate-light)",lineHeight:1.6}}>
+            Browse every self storage facility for sale.<br/>Contact brokers directly.
+          </div>
+        </div>
+
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+          {[
+            {id:"monthly",label:"Investor Monthly",price:"$99",unit:"/mo",sub:"Unlimited listings · Contact any broker · Deal alerts"},
+            {id:"annual",label:"Investor Annual",price:"$799",unit:"/yr",sub:"Save $389 · Best for active buyers",badge:"BEST VALUE"},
+          ].map(p=>(
+            <div key={p.id} className={`plan-card ${sel===p.id?"selected":""}`} onClick={()=>setSel(p.id)}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontFamily:"var(--font-body)",fontWeight:600,fontSize:16,color:"var(--slate)"}}>{p.label}</span>
+                  {p.badge&&<span style={{background:"var(--gold-pale)",color:"var(--gold)",fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:20}}>{p.badge}</span>}
+                </div>
+                <span style={{fontFamily:"var(--font-display)",fontSize:24,fontWeight:700,color:"var(--slate)"}}>{p.price}<span style={{fontSize:14,color:"var(--slate-light)",fontFamily:"var(--font-body)"}}>{p.unit}</span></span>
+              </div>
+              <div style={{fontSize:13,color:"var(--slate-light)"}}>{p.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {[
+          "Access all listings nationwide",
+          "Cap rate, NOI & occupancy data",
+          "Direct broker contact info",
+          "New listing email alerts",
+          "Cap rate calculator included",
+          "Cancel anytime",
+        ].map(f=>(
+          <div key={f} style={{display:"flex",alignItems:"center",gap:10,fontSize:14,color:"var(--slate-mid)",marginBottom:10}}>
+            <div style={{width:20,height:20,background:"var(--green-pale)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            {f}
+          </div>
+        ))}
+
+        <button className="btn btn-green btn-lg btn-full" style={{marginTop:16}} onClick={handleCheckout} disabled={loading}>
+          {loading
+            ?<><svg style={{animation:"spin .8s linear infinite"}} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" strokeOpacity=".25"/><path d="M21 12a9 9 0 00-9-9"/></svg>Redirecting…</>
+            :`Get Started · ${sel==="monthly"?"$99/month":"$799/year"} →`
+          }
+        </button>
+        <div style={{textAlign:"center",marginTop:12,fontSize:12,color:"var(--slate-lighter)"}}>🔒 Secure checkout via Stripe · Cancel anytime</div>
+      </div>
+    </div>
+  );
+}
+
+function CapRateCalc(){
+  const [price,setPrice] = useState("");
+  const [noi,setNoi] = useState("");
+  const capRate = price && noi ? ((parseFloat(noi)/parseFloat(price))*100).toFixed(2) : null;
+
+  return(
+    <div className="calc-card">
+      <div className="calc-title">Cap Rate Calculator</div>
+      <div className="calc-sub">Quickly analyze any deal before you dig deeper</div>
+      <div className="calc-inputs">
+        <div>
+          <div className="calc-label">Purchase Price ($)</div>
+          <input className="calc-input" type="number" placeholder="e.g. 1500000" value={price} onChange={e=>setPrice(e.target.value)}/>
+        </div>
+        <div>
+          <div className="calc-label">Annual NOI ($)</div>
+          <input className="calc-input" type="number" placeholder="e.g. 120000" value={noi} onChange={e=>setNoi(e.target.value)}/>
+        </div>
+      </div>
+      <div className="calc-result">
+        <span className="calc-result-label">Cap Rate</span>
+        <span className="calc-result-val">{capRate ? `${capRate}%` : "—"}</span>
+      </div>
+    </div>
+  );
+}
+
+function SubmitListing(){
+  const [form,setForm] = useState({
+    name:"",email:"",phone:"",facilityName:"",city:"",state:"Texas",
+    price:"",units:"",occupancy:"",noi:"",capRate:"",
+    climate:false,driveUp:false,boat:false,description:"",source:""
+  });
+  const [loading,setLoading] = useState(false);
+  const [success,setSuccess] = useState(false);
+  const [error,setError]     = useState(null);
+
+  const set = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  const submit = async(e) => {
+    e.preventDefault();
+    setLoading(true); setError(null);
+    try {
+      const res = await fetch("/api/submit-listing",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(form),
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error ?? "Submission failed");
+      setSuccess(true);
+    } catch(err){
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if(success) return(
+    <div className="success-box">
+      <div style={{fontSize:48,marginBottom:12}}>🎉</div>
+      <div style={{fontFamily:"var(--font-display)",fontSize:22,fontWeight:700,color:"var(--slate)",marginBottom:8}}>Listing Submitted!</div>
+      <div style={{fontSize:15,color:"var(--slate-light)",lineHeight:1.6,marginBottom:20}}>
+        We'll review your listing and publish it within 24 hours.<br/>We'll email you at <strong>{form.email}</strong> when it's live.
+      </div>
+      <button className="btn btn-green btn-md" onClick={()=>setSuccess(false)}>Submit Another Listing</button>
+    </div>
+  );
+
+  return(
+    <div className="submit-section">
+      <div className="submit-title">List Your Facility For Free</div>
+      <div className="submit-sub">
+        Reach thousands of qualified self storage investors. Free to list — always.
+      </div>
+      <form onSubmit={submit}>
+        <div className="form-grid">
+
+          <div>
+            <label className="form-label">Your Name *</label>
+            <input className="form-inp" placeholder="John Smith" value={form.name} onChange={e=>set("name",e.target.value)} required/>
+          </div>
+          <div>
+            <label className="form-label">Your Email *</label>
+            <input className="form-inp" type="email" placeholder="john@email.com" value={form.email} onChange={e=>set("email",e.target.value)} required/>
+          </div>
+          <div>
+            <label className="form-label">Phone Number</label>
+            <input className="form-inp" placeholder="(555) 000-0000" value={form.phone} onChange={e=>set("phone",e.target.value)}/>
+          </div>
+          <div>
+            <label className="form-label">Facility Name *</label>
+            <input className="form-inp" placeholder="Sunshine Storage" value={form.facilityName} onChange={e=>set("facilityName",e.target.value)} required/>
+          </div>
+          <div>
+            <label className="form-label">City *</label>
+            <input className="form-inp" placeholder="Dallas" value={form.city} onChange={e=>set("city",e.target.value)} required/>
+          </div>
+          <div>
+            <label className="form-label">State *</label>
+            <div style={{position:"relative"}}>
+              <select className="form-inp" value={form.state} onChange={e=>set("state",e.target.value)} style={{paddingRight:36}}>
+                {["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming"].map(s=><option key={s}>{s}</option>)}
+              </select>
+              <svg style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--slate-light)" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </div>
+          <div>
+            <label className="form-label">Asking Price ($) *</label>
+            <input className="form-inp" type="number" placeholder="1500000" value={form.price} onChange={e=>set("price",e.target.value)} required/>
+          </div>
+          <div>
+            <label className="form-label">Number of Units</label>
+            <input className="form-inp" type="number" placeholder="200" value={form.units} onChange={e=>set("units",e.target.value)}/>
+          </div>
+          <div>
+            <label className="form-label">Current Occupancy (%)</label>
+            <input className="form-inp" type="number" placeholder="88" value={form.occupancy} onChange={e=>set("occupancy",e.target.value)}/>
+          </div>
+          <div>
+            <label className="form-label">Annual NOI ($)</label>
+            <input className="form-inp" type="number" placeholder="120000" value={form.noi} onChange={e=>set("noi",e.target.value)}/>
+          </div>
+          <div>
+            <label className="form-label">Cap Rate (%)</label>
+            <input className="form-inp" type="number" step="0.1" placeholder="7.5" value={form.capRate} onChange={e=>set("capRate",e.target.value)}/>
+          </div>
+          <div>
+            <label className="form-label">How did you find us?</label>
+            <input className="form-inp" placeholder="Google, Reddit, referral..." value={form.source} onChange={e=>set("source",e.target.value)}/>
+          </div>
+
+          <div className="form-full">
+            <label className="form-label">Amenities</label>
+            <div style={{display:"flex",gap:20,flexWrap:"wrap"}}>
+              {[["climate","Climate Controlled"],["driveUp","Drive-Up Access"],["boat","Boat & RV Storage"]].map(([k,l])=>(
+                <label key={k} className="checkbox-row">
+                  <input type="checkbox" checked={form[k]} onChange={e=>set(k,e.target.checked)}/>
+                  <span style={{fontSize:14,color:"var(--slate-mid)",fontWeight:500}}>{l}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-full">
+            <label className="form-label">Property Description</label>
+            <textarea className="form-inp form-textarea" placeholder="Tell investors about your facility — location highlights, recent improvements, upside potential..." value={form.description} onChange={e=>set("description",e.target.value)}/>
+          </div>
+
+          {error && <div className="form-full" style={{background:"#FFF1F2",border:"1px solid #FECDD3",borderRadius:10,padding:"12px 14px",fontSize:14,color:"#BE123C"}}>{error}</div>}
+
+          <div className="form-full">
+            <button type="submit" className="btn btn-green btn-lg btn-full" disabled={loading}>
+              {loading
+                ?<><svg style={{animation:"spin .8s linear infinite"}} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" strokeOpacity=".25"/><path d="M21 12a9 9 0 00-9-9"/></svg>Submitting…</>
+                :"Submit Your Listing — Free →"
+              }
+            </button>
+            <div style={{textAlign:"center",marginTop:10,fontSize:12,color:"var(--slate-lighter)"}}>Free to list · Published within 24 hours · No commission</div>
+          </div>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function App(){
+  const [stateFilter,setStateFilter] = useState("All States");
+  const [priceFilter,setPriceFilter] = useState("Any Price");
+  const [capFilter,setCapFilter]     = useState("Any Cap Rate");
+  const [search,setSearch]           = useState("");
+  const [detail,setDetail]           = useState(null);
+  const [paywall,setPaywall]         = useState(false);
+  const [saved,setSaved]             = useState([]);
+  const [viewCount,setViewCount]     = useState(0);
+  const [listings] = useState(STATIC_LISTINGS);
+  const loadingListings = false;
+  const listingsError = null;
+  const FREE_VIEWS = 3;
+
+  const toggleSave = id => setSaved(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id]);
+
+  const handleTap = listing => {
+    if(viewCount >= FREE_VIEWS){ setPaywall(true); return; }
+    setViewCount(v=>v+1);
+    setDetail(listing);
+  };
+
+  const filtered = listings.filter(l=>{
+    if(stateFilter!=="All States" && l.state!==stateFilter.slice(-2)) return false;
+    if(search && !l.name?.toLowerCase().includes(search.toLowerCase()) && !l.city?.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  return(
+    <div style={{minHeight:"100vh",background:"var(--chalk)"}}>
+
+      {/* Nav */}
+      <nav className="nav">
+        <a className="nav-logo" href="#">
+          <div className="nav-logo-icon"><StorageIcon size={20}/></div>
+          <span className="nav-logo-text">Storage<span>Investors</span>.io</span>
+        </a>
+        <div className="nav-actions">
+          <button className="btn btn-outline btn-sm" onClick={()=>setPaywall(true)}>Sign In</button>
+          <button className="btn btn-green btn-sm" onClick={()=>setPaywall(true)}>
+            Get Access · $99/mo
+          </button>
+        </div>
+      </nav>
+
+      {/* Hero */}
+      <section className="hero">
+        <div className="fu0">
+          <div className="hero-badge">
+            <span className="hero-badge-dot"/>
+            {STATIC_LISTINGS.length}+ Active Listings Nationwide
+          </div>
+        </div>
+        <h1 className="fu1 hero-title">
+          Find Self Storage<br/>Facilities <em>For Sale</em>
+        </h1>
+        <p className="fu2 hero-sub">
+          The most comprehensive marketplace for self storage investments. Browse listings with cap rates, NOI, and occupancy data — all in one place.
+        </p>
+
+        {/* Search */}
+        <div className="fu3 search-bar">
+          <div className="search-input-wrap">
+            <input className="search-input" placeholder="Search by city or state..." value={search} onChange={e=>setSearch(e.target.value)}/>
+          </div>
+          <div className="search-divider"/>
+          <select className="search-select" value={priceFilter} onChange={e=>setPriceFilter(e.target.value)}>
+            {PRICE_RANGES.map(p=><option key={p}>{p}</option>)}
+          </select>
+          <div className="search-divider"/>
+          <select className="search-select" value={capFilter} onChange={e=>setCapFilter(e.target.value)}>
+            {CAP_RATES.map(c=><option key={c}>{c}</option>)}
+          </select>
+          <button className="btn btn-green btn-md" style={{borderRadius:10,flexShrink:0}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            Search
+          </button>
+        </div>
+
+        {/* Stats */}
+        <div className="fu4 stats-bar">
+          {[["$2.1B","Total Listing Value"],["6.8%","Avg Cap Rate"],["312","Active Listings"],["50","States Covered"]].map(([n,l],i)=>(
+            <div key={l} className="stat-item">
+              <div className="stat-num">{n}</div>
+              <div className="stat-label">{l}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Filter bar */}
+      <div className="filter-bar">
+        <span style={{fontSize:13,fontWeight:600,color:"var(--slate-mid)",whiteSpace:"nowrap",marginRight:4}}>Filter:</span>
+        {["All","Climate Control","Drive-Up","Boat & RV","Under $1M","Cap Rate 7%+","100+ Units"].map(f=>(
+          <button key={f} className={`filter-chip ${f==="All"?"active":""}`}>{f}</button>
+        ))}
+      </div>
+
+      {/* Main content */}
+      <div className="listings-section">
+
+        {/* Cap Rate Calculator */}
+        <CapRateCalc/>
+
+        {/* Listings */}
+        {loadingListings && (
+          <div style={{display:"flex",flexDirection:"column",gap:16,marginBottom:32}}>
+            <div style={{height:32,width:200,borderRadius:8}} className="shimmer"/>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:20}}>
+              {[0,1,2,3,4,5].map(i=><div key={i} className="shimmer" style={{height:320,animationDelay:`${i*.1}s`}}/>)}
+            </div>
+          </div>
+        )}
+        {listingsError && (
+          <div style={{background:"#FFF1F2",border:"1px solid #FECDD3",borderRadius:16,padding:"24px",marginBottom:32,textAlign:"center"}}>
+            <div style={{fontSize:32,marginBottom:8}}>⚠️</div>
+            <div style={{fontFamily:"var(--font-display)",fontSize:18,fontWeight:600,color:"var(--slate)",marginBottom:4}}>Failed to load listings</div>
+            <div style={{fontSize:14,color:"#BE123C"}}>{listingsError}</div>
+          </div>
+        )}
+
+        {/* Listings */}
+        <div className="listings-header">
+          <div>
+            <div className="listings-title">Self Storage Facilities For Sale</div>
+            <div className="listings-count">`${filtered.length} listings · Source: Crexi`</div>
+          </div>
+          <button className="btn btn-outline btn-sm" onClick={()=>setPaywall(true)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            Deal Alerts
+          </button>
+        </div>
+
+        <div className="listings-grid">
+          {filtered.map((l,i)=>(
+            <ListingCard
+              key={l.id} listing={l} i={i}
+              onTap={handleTap}
+              saved={saved.includes(l.id)}
+              onSave={toggleSave}
+              locked={i >= FREE_VIEWS}
+            />
+          ))}
+        </div>
+
+        {viewCount >= FREE_VIEWS && (
+          <div style={{textAlign:"center",padding:"48px 20px",background:"#fff",borderRadius:"var(--radius)",border:"1px solid var(--border)",marginTop:24,boxShadow:"var(--shadow-sm)"}}>
+            <div style={{fontSize:40,marginBottom:12}}>🔒</div>
+            <div style={{fontFamily:"var(--font-display)",fontSize:22,fontWeight:700,color:"var(--slate)",marginBottom:8}}>
+              You've viewed {FREE_VIEWS} free listings
+            </div>
+            <div style={{fontSize:15,color:"var(--slate-light)",marginBottom:24,lineHeight:1.6}}>
+              Subscribe to unlock all listings with full financials,<br/>broker contacts, and deal alerts.
+            </div>
+            <button className="btn btn-green btn-lg" onClick={()=>setPaywall(true)}>
+              Get Full Access · $99/month →
+            </button>
+          </div>
+        )}
+
+        {/* Submit listing */}
+        <SubmitListing/>
+
+        {/* Trust section */}
+        <div style={{marginTop:48,padding:"32px",background:"#fff",borderRadius:"var(--radius)",border:"1px solid var(--border)",textAlign:"center"}}>
+          <div style={{fontFamily:"var(--font-display)",fontSize:20,fontWeight:600,color:"var(--slate)",marginBottom:8}}>
+            Trusted by self storage investors nationwide
+          </div>
+          <div style={{fontSize:14,color:"var(--slate-light)",marginBottom:24}}>
+            Listings sourced daily from LoopNet, Crexi, and BizBuySell
+          </div>
+          <div style={{display:"flex",justifyContent:"center",gap:32,flexWrap:"wrap"}}>
+            {[["312","Active Listings"],["$2.1B","Total Value"],["50","States"],["Daily","Updates"]].map(([n,l])=>(
+              <div key={l} style={{textAlign:"center"}}>
+                <div style={{fontFamily:"var(--font-display)",fontSize:28,fontWeight:700,color:"var(--green)",marginBottom:2}}>{n}</div>
+                <div style={{fontSize:12,color:"var(--slate-lighter)",textTransform:"uppercase",letterSpacing:".06em"}}>{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {detail && <DetailSheet listing={detail} onClose={()=>setDetail(null)} onPaywall={()=>{setDetail(null);setPaywall(true);}}/>}
+      {paywall && <PaywallSheet onClose={()=>setPaywall(false)}/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
